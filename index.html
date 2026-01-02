@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全方位英語互動學習系統</title>
+    <style>
+        /* --- 樣式區 (CSS) --- */
+        :root { --primary: #4a90e2; --bg: #f5f7fa; --text: #333; }
+        body { font-family: '微軟正黑體', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        #app { width: 100%; max-width: 800px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        
+        /* 標題與導航 */
+        header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        h1 { margin: 0; color: var(--primary); }
+        .nav-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: #eee; padding: 10px; border-radius: 8px; }
+        .hidden { display: none !important; }
+
+        /* 按鈕樣式 */
+        .grid-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .menu-btn { background: var(--primary); color: white; border: none; padding: 25px; font-size: 1.2rem; border-radius: 10px; cursor: pointer; transition: 0.3s; }
+        .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4); }
+        .btn { background: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .btn-back { background: #95a5a6; }
+        
+        /* 功能區塊通用 */
+        .card { border: 2px solid #ddd; padding: 30px; text-align: center; font-size: 1.5rem; margin: 20px 0; border-radius: 10px; cursor: pointer; background: #fff; }
+        .input-box { width: 100%; padding: 10px; font-size: 1rem; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        .result { font-weight: bold; margin-top: 10px; }
+        .correct { color: green; } .wrong { color: red; }
+        .tag { background: #e1ecf4; color: #2c3e50; padding: 5px 10px; border-radius: 15px; margin: 2px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header>
+        <h1>English Learning Hub</h1>
+        <p>互動式英語學習系統 (單檔版)</p>
+    </header>
+
+    <div id="nav" class="nav-bar hidden">
+        <button class="btn btn-back" onclick="App.showMenu()">← 回主選單</button>
+        <span id="module-name" style="font-weight: bold;"></span>
+    </div>
+
+    <div id="container"></div>
+</div>
+
+<script>
+/* ===========================================================
+    系統核心邏輯 (System Core) - 不要隨意修改這裡
+   ===========================================================
+*/
+const App = {
+    modules: [],
+    
+    // 註冊新功能
+    register: function(module) {
+        this.modules.push(module);
+    },
+
+    // 顯示主選單
+    showMenu: function() {
+        document.getElementById('nav').classList.add('hidden');
+        const container = document.getElementById('container');
+        
+        let html = '<div class="grid-menu">';
+        this.modules.forEach((mod, index) => {
+            html += `<button class="menu-btn" onclick="App.load(${index})">${mod.name}</button>`;
+        });
+        html += '</div>';
+        
+        // 如果想讓別人知道怎麼加功能，可以顯示這行提示
+        html += '<p style="text-align:center; color:#999; margin-top:30px; font-size:0.9rem;">提示：用記事本開啟此檔案即可擴充功能程式碼</p>';
+        
+        container.innerHTML = html;
+    },
+
+    // 載入模組
+    load: function(index) {
+        const mod = this.modules[index];
+        document.getElementById('nav').classList.remove('hidden');
+        document.getElementById('module-name').innerText = mod.name;
+        document.getElementById('container').innerHTML = ''; // 清空
+        mod.render(document.getElementById('container'));    // 繪製
+    },
+
+    init: function() {
+        this.showMenu();
+    }
+};
+
+/* ===========================================================
+    功能模組區 (Modules) - 要新增功能請複製下方的格式貼上
+   ===========================================================
+*/
+
+// 1. 文法 (Grammar)
+App.register({
+    name: "Grammar Challenge",
+    render: function(div) {
+        const quiz = [
+            { q: "She ___ usually wake up early.", ans: "doesn't", opts: ["don't", "doesn't", "isn't"] },
+            { q: "I have ___ been to Japan.", ans: "never", opts: ["ever", "never", "did"] }
+        ];
+        let html = '<h3>Select the correct answer:</h3>';
+        quiz.forEach((item, i) => {
+            html += `<div style="margin-bottom:15px; padding:10px; background:#f9f9f9; border-radius:5px;">
+                <p><strong>${i+1}. ${item.q}</strong></p>
+                ${item.opts.map(o => `<label style="margin-right:15px;"><input type="radio" name="q${i}" value="${o}"> ${o}</label>`).join('')}
+            </div>`;
+        });
+        html += '<button class="btn" onclick="checkGrammar()">Check Answers</button><div id="g-res" class="result"></div>';
+        div.innerHTML = html;
+
+        window.checkGrammar = () => {
+            let score = 0;
+            quiz.forEach((item, i) => {
+                const el = document.querySelector(`input[name="q${i}"]:checked`);
+                if(el && el.value === item.ans) score++;
+            });
+            document.getElementById('g-res').innerHTML = `Score: ${score} / ${quiz.length}`;
+        };
+    }
+});
+
+// 2. 單字 (Vocabulary)
+App.register({
+    name: "Vocabulary Flashcards",
+    render: function(div) {
+        const words = { "Ambiguous": "模棱兩可的", "Benevolent": "仁慈的", "Candid": "率直的" };
+        const keys = Object.keys(words);
+        let idx = 0, show = false;
+
+        const draw = () => {
+            const key = keys[idx];
+            div.innerHTML = `
+                <div class="card" onclick="toggleVocab()">${show ? words[key] : key}</div>
+                <p style="text-align:center; color:#666;">點擊卡片翻面</p>
+                <button class="btn" style="width:100%" onclick="nextVocab()">下一張 (Next)</button>
+            `;
+        };
+        
+        window.toggleVocab = () => { show = !show; draw(); };
+        window.nextVocab = () => { idx = (idx + 1) % keys.length; show = false; draw(); };
+        draw();
+    }
+});
+
+// 3. 閱讀 (Reading)
+App.register({
+    name: "Reading Comprehension",
+    render: function(div) {
+        div.innerHTML = `
+            <div style="background:#fff3cd; padding:15px; border-radius:5px; margin-bottom:20px;">
+                <h4 style="margin-top:0;">Reading Passage:</h4>
+                <p>"Effective communication is not just about speaking clearly. It also involves active listening, which means paying full attention to the speaker."</p>
+            </div>
+            <p><strong>Q: What does active listening involve?</strong></p>
+            <select id="r-ans" class="input-box"><option>Select...</option><option value="1">Speaking loud</option><option value="2">Paying attention</option></select>
+            <button class="btn" onclick="checkRead()">Submit</button>
+            <p id="r-msg" class="result"></p>
+        `;
+        window.checkRead = () => {
+            const val = document.getElementById('r-ans').value;
+            const msg = document.getElementById('r-msg');
+            msg.innerHTML = (val === "2") ? "<span class='correct'>Correct!</span>" : "<span class='wrong'>Try again.</span>";
+        };
+    }
+});
+
+// 4. 寫作 (Writing)
+App.register({
+    name: "Writing Practice",
+    render: function(div) {
+        div.innerHTML = `
+            <h3>Describe your favorite season.</h3>
+            <textarea id="essay" rows="8" class="input-box" oninput="countWords(this)"></textarea>
+            <p id="w-count" style="color:#666;">Words: 0 | Chars: 0</p>
+        `;
+        window.countWords = (el) => {
+            const txt = el.value.trim();
+            document.getElementById('w-count').innerText = `Words: ${txt ? txt.split(/\s+/).length : 0} | Chars: ${el.value.length}`;
+        };
+    }
+});
+
+// 5. 團隊 (Team)
+App.register({
+    name: "Design Team",
+    render: function(div) {
+        div.innerHTML = `
+            <div style="text-align:center;">
+                <h2>About Us</h2>
+                <p>Designed for seamless local learning.</p>
+                <ul style="list-style:none; padding:0;">
+                    <li>🌟 Project Manager: Alex</li>
+                    <li>💻 Developer: Jamie</li>
+                    <li>🎨 Designer: Casey</li>
+                </ul>
+            </div>
+        `;
+    }
+});
+
+// 6. 篇章結構 (Structure)
+App.register({
+    name: "Structure Puzzle",
+    render: function(div) {
+        const sents = ["1. Wake up.", "2. Brush teeth.", "3. Eat breakfast."];
+        let shuffled = [...sents].sort(()=>Math.random()-0.5);
+        let userOrder = [];
+
+        div.innerHTML = `<p>Click sentences in order:</p><div id="pool"></div><hr>
+                         <h4>Your Order:</h4><div id="u-area" style="min-height:30px; background:#eee; padding:5px;"></div>
+                         <button class="btn" onclick="checkStruct()">Check</button> <button class="btn" style="background:#888" onclick="App.load(5)">Reset</button>`;
+        
+        const pool = div.querySelector('#pool');
+        shuffled.forEach(t => {
+            pool.innerHTML += `<button class="btn" style="background:#f39c12; display:block; margin:5px 0; width:100%" onclick="pickSent(this, '${t}')">${t}</button>`;
+        });
+
+        window.pickSent = (btn, text) => {
+            userOrder.push(text);
+            document.getElementById('u-area').innerHTML += `<div class="tag">${text}</div>`;
+            btn.style.display = 'none';
+        };
+        window.checkStruct = () => {
+            alert(JSON.stringify(userOrder)===JSON.stringify(sents) ? "Correct!" : "Wrong order.");
+        };
+    }
+});
+
+// 7. 單字接龍 (Word Chain)
+App.register({
+    name: "Word Chain Game",
+    render: function(div) {
+        div.innerHTML = `
+            <p>Enter a word starting with the last letter of the previous one.</p>
+            <div id="chain-box" style="background:#f0f0f0; padding:10px; height:150px; overflow-y:auto; border-radius:5px;"></div>
+            <input type="text" id="w-in" class="input-box" placeholder="Type and press Enter">
+            <p id="w-err" style="color:red;"></p>
+        `;
+        let history = [];
+        
+        document.getElementById('w-in').addEventListener('keypress', function(e){
+            if(e.key === 'Enter'){
+                const w = this.value.trim().toLowerCase();
+                const err = document.getElementById('w-err');
+                err.innerText = "";
+                
+                if(!/^[a-z]+$/.test(w)) return err.innerText = "Only English letters!";
+                if(history.length && w[0] !== history[history.length-1].slice(-1)) return err.innerText = "Wrong starting letter!";
+                if(history.includes(w)) return err.innerText = "Used already!";
+                
+                history.push(w);
+                document.getElementById('chain-box').innerHTML += `<span class="tag">${w}</span> → `;
+                this.value = "";
+            }
+        });
+    }
+});
+
+// 啟動程式
+window.onload = function() { App.init(); };
+</script>
+
+</body>
+</html>
